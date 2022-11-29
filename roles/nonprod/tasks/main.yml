@@ -1,0 +1,19 @@
+- name: Getting OS Flavor
+  command: "uname -s"
+  register: os_version
+
+- name: Download EKSCTL binary
+  unarchive:
+    src: https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_{{ os[0] }}_amd64.tar.gz
+    dest: "{{bin_path}}"
+    remote_src: yes
+  vars:
+    os:
+      - "{{ os_version.stdout }}"
+
+- name: Check EKSCTL version
+  shell: "{{ bin_path }}/eksctl get labels --nodegroup={{node_group}} --cluster={{cluster_name}}"
+  register: "output"
+
+- debug: var=output.stdout_lines
+
