@@ -1,4 +1,4 @@
-kubernetes_version: 1.21
+upgrade_kubernetes_version: 1.21
 cluster_name: np-eks1
 node_group: np-eks1-pool01
 bin_path: /tmp
