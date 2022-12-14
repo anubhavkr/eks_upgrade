@@ -1,19 +1,48 @@
-- name: Getting OS Flavor
-  command: "uname -s"
-  register: os_version
+#- name: Getting OS Flavor
+#  command: "uname -s"
+#  register: os_version
+#  tags: eksctldownload
+#  
+#- name: Download EKSCTL binary
+#  unarchive:
+#    src: https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_{{ os[0] }}_amd64.tar.gz
+#    dest: "{{bin_path}}"
+#    remote_src: yes
+#  vars:
+#    os:
+#      - "{{ os_version.stdout }}"
+#  tags: eksctldownload
+  
+- name: Check EKS Cluster version
+  shell: "aws eks describe-nodegroup --cluster-name {{ cluster_name }} --nodegroup-name {{ node_group }} --query 'nodegroup.version' --output text"
+  register: eksversion
+  tags: eksupgrade
 
-- name: Download EKSCTL binary
-  unarchive:
-    src: https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_{{ os[0] }}_amd64.tar.gz
-    dest: "{{bin_path}}"
-    remote_src: yes
-  vars:
-    os:
-      - "{{ os_version.stdout }}"
+- name: Check NodeGroup Release version
+  shell: "aws eks describe-nodegroup --cluster-name {{ cluster_name }} --nodegroup-name {{ node_group }} --query 'nodegroup.releaseVersion' --output text"
+  register: relversion
+  tags: eksupgrade
 
-- name: Check EKSCTL version
-  shell: "{{ bin_path }}/eksctl get labels --nodegroup={{node_group}} --cluster={{cluster_name}}"
-  register: "output"
+- name: Get AG Name
+  shell: "aws eks describe-nodegroup --cluster-name {{ cluster_name }} --nodegroup-name {{ node_group }} --query 'nodegroup.resources.autoScalingGroups[0].name' --output text"
+  register: ag_name
+  tags: eksupgrade
 
-- debug: var=output.stdout_lines
+- name: Get Instance ID under Node Group
+  shell: "aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name {{ ag_name.stdout }} --query 'AutoScalingGroups[].Instances[].InstanceId' --output text"
+  register: instanceid
+  tags: eksupgrade
 
+- debug: 
+    msg:
+     - "EKS Cluster Name    => {{ cluster_name }}" 
+     - "Node Group Name     => {{ node_group }}"
+     - "EKS Cluster Version => {{ eksversion.stdout }}"
+     - "Release Version     => {{ relversion.stdout }}"       
+     - "Instance ID         => {{ instanceid.stdout }}" 
+  tags: eksupgrade 
+
+#- name: Upgrade Node Group
+#  shell: "aws eks update-nodegroup-version --cluster-name {{ cluster_name }} --nodegroup-name {{ node_group }} --kubernetes-version {{ upgrade_kubernetes_version }}"
+#  register: upgrade
+#  tags: eksupgrade
