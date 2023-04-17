@@ -97,10 +97,9 @@ do
     fi
 done
 
-echo -e "\n Checking the status of each pod in the cluster"
+echo -e "\nChecking the status of each pod in the cluster"
 # Get the list of all namespaces
 NAMESPACE_LIST=$(kubectl get namespaces -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
-
 # Loop through each namespace and get the list of pods
 for NAMESPACE in $NAMESPACE_LIST
 do
@@ -119,7 +118,7 @@ do
             for i in {1..5}
             do
                 echo "Pod $POD in namespace $NAMESPACE is not in the running state (status: $POD_STATUS). Retrying in 1 minute..."
-                sleep 60
+                sleep 2
                 POD_STATUS=$(kubectl get pod $POD -n $NAMESPACE -o jsonpath='{.status.phase}')
                 if [ "$POD_STATUS" == "Running" ]
                 then
@@ -127,10 +126,16 @@ do
                     break
                 fi
             done
+            # If the node is still not in the ready state after 5 minutes, print its name
+            if [ "$POD_STATUS" != "Running" ]
+            then
+                echo "Pod $POD in namespace $NAMESPACE is not in the ready state"
+            fi
+        else
+            echo "Pod $POD in namespace $NAMESPACE is in the running state"
         fi
     done
 done
-
 
 # Get Current EKS Cluster Version
 CURRENT_EKS_VERSION=$(aws eks describe-cluster --name $CLUSTER_NAME | jq -r .cluster.version)
