@@ -78,7 +78,7 @@ do
         for i in {1..5}
         do
             echo "Node $NODE is not in the ready state. Retrying in 1 minute..."
-            sleep 2
+            sleep 60
             NODE_STATUS=$(kubectl get node $NODE -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')
             if [ "$NODE_STATUS" == "True" ]
             then
@@ -118,7 +118,7 @@ do
             for i in {1..5}
             do
                 echo "Pod $POD in namespace $NAMESPACE is not in the running state (status: $POD_STATUS). Retrying in 1 minute..."
-                sleep 2
+                sleep 60
                 POD_STATUS=$(kubectl get pod $POD -n $NAMESPACE -o jsonpath='{.status.phase}')
                 if [ "$POD_STATUS" == "Running" ]
                 then
