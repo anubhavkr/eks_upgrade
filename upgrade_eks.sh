@@ -62,8 +62,8 @@ echo -e "\nNode group $NODE_GROUP is successfully upgraded!!!"
 
 echo -e "\n## Post-Activity Validation After Upgrade=>"
 
-echo -e "\n Checking the status of each node in the cluster"
-# Get the list of nodes in the cluster
+echo -e "\nChecking the status of each node in the cluster"
+
 NODE_LIST=$(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
 
 # Loop through each node and check its status
@@ -78,7 +78,7 @@ do
         for i in {1..5}
         do
             echo "Node $NODE is not in the ready state. Retrying in 1 minute..."
-            sleep 60
+            sleep 2
             NODE_STATUS=$(kubectl get node $NODE -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')
             if [ "$NODE_STATUS" == "True" ]
             then
@@ -92,6 +92,8 @@ do
         then
             echo "Node $NODE is not in the ready state"
         fi
+    else
+        echo "Node $NODE is in the ready state"
     fi
 done
 
