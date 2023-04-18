@@ -58,6 +58,22 @@ echo -e "\nUpgrade $NODE_GROUP to version $k8s_version. block is commented !"
 # Upgrade Node Group
 #aws eks update-nodegroup-version --cluster-name $CLUSTER_NAME --nodegroup-name $NODE_GROUP --kubernetes-version $k8s_version
 
+## Check status of update
+#while true; do
+#  status=$(aws eks describe-update --name $CLUSTER_NAME --nodegroup-name $NODE_GROUP --query "update.status")
+
+#  if [[ "$status" == "\"Successful\"" ]]; then
+#    echo "Node group update succeeded"
+#    break
+#  elif [[ "$status" == "\"Failed\"" ]]; then
+#    echo "Node group update failed"
+#    exit 1
+#  else
+#    echo "Node group update still in progress, status: $status"
+#    sleep 30
+#  fi
+#done
+
 echo -e "\nNode group $NODE_GROUP is successfully upgraded!!!"
 
 echo -e "\n## Post-Activity Validation After Upgrade=>"
@@ -78,7 +94,7 @@ do
         for i in {1..5}
         do
             echo "Node $NODE is not in the ready state. Retrying in 1 minute..."
-            sleep 60
+            sleep 120
             NODE_STATUS=$(kubectl get node $NODE -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')
             if [ "$NODE_STATUS" == "True" ]
             then
@@ -121,7 +137,7 @@ do
             for i in {1..5}
             do
                 echo "Pod $POD in namespace $NAMESPACE is not in the running state (status: $POD_STATUS). Retrying in 1 minute..."
-                sleep 60
+                sleep 120
                 POD_STATUS=$(kubectl get pod $POD -n $NAMESPACE -o jsonpath='{.status.phase}')
                 if [ "$POD_STATUS" == "Running" ]
                 then
