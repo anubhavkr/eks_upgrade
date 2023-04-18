@@ -64,7 +64,7 @@ echo -e "\n## Post-Activity Validation After Upgrade=>"
 
 echo -e "\nChecking the status of each node in the cluster"
 
-NODE_LIST=$(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
+NODE_LIST=$(kubectl get nodes -l eks.amazonaws.com/nodegroup=$NODE_GROUP -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
 
 # Loop through each node and check its status
 for NODE in $NODE_LIST
@@ -96,6 +96,9 @@ do
         echo "Node $NODE is in the ready state"
     fi
 done
+
+echo -e "\nStatus of each node in the $CLUSTER_NAME for $NODE_GROUP"
+kubectl get nodes -l eks.amazonaws.com/nodegroup=$NODE_GROUP
 
 echo -e "\nChecking the status of each pod in the cluster"
 # Get the list of all namespaces
