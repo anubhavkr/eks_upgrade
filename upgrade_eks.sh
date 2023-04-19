@@ -58,21 +58,22 @@ echo -e "\nUpgrade $NODE_GROUP to version $k8s_version. block is commented !"
 # Upgrade Node Group
 #aws eks update-nodegroup-version --cluster-name $CLUSTER_NAME --nodegroup-name $NODE_GROUP --kubernetes-version $k8s_version
 
-## Check status of update
-#while true; do
-#  status=$(aws eks describe-update --name $CLUSTER_NAME --nodegroup-name $NODE_GROUP --query "update.status")
+echo -e "\nChecking status of node group $NODE_GROUP in cluster $CLUSTER_NAME..."
 
-#  if [[ "$status" == "\"Successful\"" ]]; then
-#    echo "Node group update succeeded"
-#    break
-#  elif [[ "$status" == "\"Failed\"" ]]; then
-#    echo "Node group update failed"
-#    exit 1
-#  else
-#    echo "Node group update still in progress, status: $status"
-#    sleep 30
-#  fi
-#done
+while true; do
+    STATUS=$(aws eks describe-nodegroup --cluster-name $CLUSTER_NAME --nodegroup-name $NODE_GROUP --query 'nodegroup.status' --output text)
+    
+    if [ "$STATUS" == "ACTIVE" ]; then
+        echo "Node group $NODE_GROUP is now active."
+        break
+    elif [ "$STATUS" == "UPDATING" ]; then
+        echo "Node group $NODE_GROUP is updating. Sleeping for 3 minutes before checking again..."
+        sleep 180
+    else
+        echo "Node group $NODE_GROUP is in status: $STATUS. Aborting..."
+        exit 1
+    fi
+done
 
 echo -e "\nNode group $NODE_GROUP is successfully upgraded!!!"
 
@@ -116,46 +117,6 @@ done
 echo -e "\nStatus of each node in the $CLUSTER_NAME for $NODE_GROUP"
 kubectl get nodes -l eks.amazonaws.com/nodegroup=$NODE_GROUP
 
-echo -e "\nChecking the status of each pod in the cluster"
-# Get the list of all namespaces
-NAMESPACE_LIST=$(kubectl get namespaces -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
-# Loop through each namespace and get the list of pods
-for NAMESPACE in $NAMESPACE_LIST
-do
-    # Get the list of pods in the namespace
-    POD_LIST=$(kubectl get pods -n $NAMESPACE -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
-
-    # Loop through each pod and check its status
-    for POD in $POD_LIST
-    do
-        POD_STATUS=$(kubectl get pod $POD -n $NAMESPACE -o jsonpath='{.status.phase}')
-
-        # Check if the pod is not in the running or completed state
-        if [[ "$POD_STATUS" != "Running" && "$POD_STATUS" != "Succeeded" && "$POD_STATUS" != "Failed" ]]
-        then
-            # Retry for up to 5 times
-            for i in {1..5}
-            do
-                echo "Pod $POD in namespace $NAMESPACE is not in the running state (status: $POD_STATUS). Retrying in 2 minute..."
-                sleep 120
-                POD_STATUS=$(kubectl get pod $POD -n $NAMESPACE -o jsonpath='{.status.phase}')
-                if [ "$POD_STATUS" == "Running" ]
-                then
-                    echo "Pod $POD in namespace $NAMESPACE is now in the running state"
-                    break
-                fi
-            done
-            # If the node is still not in the ready state after 10 minutes, print its name
-            if [ "$POD_STATUS" != "Running" ]
-            then
-                echo "Pod $POD in namespace $NAMESPACE is not in the ready state"
-            fi
-        else
-            echo "Pod $POD in namespace $NAMESPACE is in the running state"
-        fi
-    done
-done
-
 # Get Current EKS Cluster Version
 CURRENT_EKS_VERSION=$(aws eks describe-cluster --name $CLUSTER_NAME | jq -r .cluster.version)
 echo -e "\nEKS Version = $CURRENT_EKS_VERSION"
@@ -163,10 +124,6 @@ echo -e "\nEKS Version = $CURRENT_EKS_VERSION"
 # Get current releaseVersion
 RELEASE_VERSION=$(aws eks describe-nodegroup --cluster-name $CLUSTER_NAME --nodegroup-name $NODE_GROUP --query 'nodegroup.releaseVersion' --output text)
 echo -e "Release Version = $RELEASE_VERSION"
-
-# Get AG Name
-AG=$(aws eks describe-nodegroup --cluster-name $CLUSTER_NAME --nodegroup-name $NODE_GROUP --query 'nodegroup.resources.autoScalingGroups[0].name' --output text)
-echo -e "AG Name = $AG"
 
 # Get Instance ID under Node Group
 INSTANCE_ID=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $AG --query 'AutoScalingGroups[].Instances[].InstanceId' --output text)
