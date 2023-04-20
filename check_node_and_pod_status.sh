@@ -1,8 +1,38 @@
 #!/usr/bin/env bash
 
+# Get List of Clusters
+EKS_CLUSTER=$(aws eks list-clusters | jq -r .clusters[])
+if [ $? -ne 0 ]; then 
+    echo "Please check your AWS authentication!"
+    exit 1
+fi
+eks_options=($EKS_CLUSTER)
+
+echo "Please select cluster..."
+PS3="Enter a number (1-${#eks_options[@]}): "
+
+select eks_option in "${eks_options[@]}"; do
+    export CLUSTER_NAME=$eks_option
+    break
+done
+
+# Get List of Node Groups
+NODE_GROUP=$(aws eks list-nodegroups --cluster-name $CLUSTER_NAME  | jq -r .nodegroups[])
+node_options=($NODE_GROUP)
+echo -e "\nPlease select node group..."
+PS3="Enter a number (1-${#node_options[@]}): "
+
+select node_option in "${node_options[@]}"; do
+    export NODE_GROUP=$node_option
+    break
+done    
+
+echo -e "\nCluster Name = $CLUSTER_NAME"
+echo -e "NodeGroup=$NODE_GROUP"
+
 echo -e "\nChecking the status of each node in the cluster"
 
-NODE_LIST=$(kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
+NODE_LIST=$(kubectl get nodes -l eks.amazonaws.com/nodegroup=$NODE_GROUP -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
 
 # Loop through each node and check its status
 for NODE in $NODE_LIST
@@ -36,7 +66,7 @@ do
 done
 
 echo -e "\nStatus of each node in the $CLUSTER_NAME for $NODE_GROUP"
-kubectl get nodes
+kubectl get nodes -l eks.amazonaws.com/nodegroup=$NODE_GROUP
 
 echo -e "\nChecking the status of each pod in the cluster"
 # Get the list of all namespaces
