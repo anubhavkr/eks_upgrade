@@ -27,16 +27,16 @@ select node_option in "${node_options[@]}"; do
     break
 done    
 
-echo -e "\nCluster Name = $CLUSTER_NAME"
-echo -e "NodeGroup=$NODE_GROUP"
 
 echo -e "\n## Pre-Activity Validation Before Upgrade=>"
+
+echo -e "\nCluster Name = $CLUSTER_NAME"
 
 # Get Current EKS Cluster Version
 CURRENT_EKS_VERSION=$(aws eks describe-cluster --name $CLUSTER_NAME | jq -r .cluster.version)
 echo -e "\nCurrent EKS Version = $CURRENT_EKS_VERSION"
 
-echo -e "NodeGroup=$NODE_GROUP"
+echo -e "NodeGroup = $NODE_GROUP"
 
 # Get current releaseVersion
 RELEASE_VERSION=$(aws eks describe-nodegroup --cluster-name $CLUSTER_NAME --nodegroup-name $NODE_GROUP --query 'nodegroup.releaseVersion' --output text)
@@ -47,8 +47,8 @@ AG=$(aws eks describe-nodegroup --cluster-name $CLUSTER_NAME --nodegroup-name $N
 echo -e "AG Name = $AG"
 
 ## Get Instance ID under Node Group
-#INSTANCE_ID=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $AG --query 'AutoScalingGroups[].Instances[].InstanceId' --output text)
-#echo -e "Instance-IDs = $INSTANCE_ID"
+INSTANCE_ID=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $AG --query 'AutoScalingGroups[].Instances[].InstanceId' --output text)
+echo -e "Instance-IDs = $INSTANCE_ID"
 
 read -rep $'\nPlease provide the desired K8S version:\n' k8s_version
 
