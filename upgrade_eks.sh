@@ -46,9 +46,9 @@ echo -e "Release Version = $RELEASE_VERSION"
 AG=$(aws eks describe-nodegroup --cluster-name $CLUSTER_NAME --nodegroup-name $NODE_GROUP --query 'nodegroup.resources.autoScalingGroups[0].name' --output text)
 echo -e "AG Name = $AG"
 
-# Get Instance ID under Node Group
-INSTANCE_ID=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $AG --query 'AutoScalingGroups[].Instances[].InstanceId' --output text)
-echo -e "Instance-IDs = $INSTANCE_ID"
+## Get Instance ID under Node Group
+#INSTANCE_ID=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $AG --query 'AutoScalingGroups[].Instances[].InstanceId' --output text)
+#echo -e "Instance-IDs = $INSTANCE_ID"
 
 read -rep $'\nPlease provide the desired K8S version:\n' k8s_version
 
@@ -79,44 +79,6 @@ echo -e "\nNode group $NODE_GROUP is successfully upgraded!!!"
 
 echo -e "\n## Post-Activity Validation After Upgrade=>"
 
-echo -e "\nChecking the status of each node in the cluster"
-
-NODE_LIST=$(kubectl get nodes -l eks.amazonaws.com/nodegroup=$NODE_GROUP -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}')
-
-# Loop through each node and check its status
-for NODE in $NODE_LIST
-do
-    NODE_STATUS=$(kubectl get node $NODE -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')
-
-    # Check if the node is not in the ready state
-    if [ "$NODE_STATUS" != "True" ]
-    then
-        # Retry for up to 5 times
-        for i in {1..5}
-        do
-            echo "Node $NODE is not in the ready state. Retrying in 2 minute..."
-            sleep 120
-            NODE_STATUS=$(kubectl get node $NODE -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')
-            if [ "$NODE_STATUS" == "True" ]
-            then
-                echo "Node $NODE is now in the ready state"
-                break
-            fi
-        done
-
-        # If the node is still not in the ready state after 10 minutes, print its name
-        if [ "$NODE_STATUS" != "True" ]
-        then
-            echo "Node $NODE is not in the ready state"
-        fi
-    else
-        echo "Node $NODE is in the ready state"
-    fi
-done
-
-echo -e "\nStatus of each node in the $CLUSTER_NAME for $NODE_GROUP"
-kubectl get nodes -l eks.amazonaws.com/nodegroup=$NODE_GROUP
-
 # Get Current EKS Cluster Version
 CURRENT_EKS_VERSION=$(aws eks describe-cluster --name $CLUSTER_NAME | jq -r .cluster.version)
 echo -e "\nEKS Version = $CURRENT_EKS_VERSION"
@@ -125,8 +87,8 @@ echo -e "\nEKS Version = $CURRENT_EKS_VERSION"
 RELEASE_VERSION=$(aws eks describe-nodegroup --cluster-name $CLUSTER_NAME --nodegroup-name $NODE_GROUP --query 'nodegroup.releaseVersion' --output text)
 echo -e "Release Version = $RELEASE_VERSION"
 
-# Get Instance ID under Node Group
-INSTANCE_ID=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $AG --query 'AutoScalingGroups[].Instances[].InstanceId' --output text)
-echo -e "Instance-IDs = $INSTANCE_ID"
+## Get Instance ID under Node Group
+#INSTANCE_ID=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $AG --query 'AutoScalingGroups[].Instances[].InstanceId' --output text)
+#echo -e "Instance-IDs = $INSTANCE_ID"
 
 echo -e "\n"
