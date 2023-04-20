@@ -52,8 +52,7 @@ echo -e "AG Name = $AG"
 
 read -rep $'\nPlease provide the desired K8S version:\n' k8s_version
 
-echo -e "\n## Upgradation Node Group =>"
-echo -e "\nUpgrade $NODE_GROUP to version $k8s_version. block is commented !"
+echo -e "\n## Upgradation Node Group $NODE_GROUP =>"
 
 # Upgrade Node Group
 #aws eks update-nodegroup-version --cluster-name $CLUSTER_NAME --nodegroup-name $NODE_GROUP --kubernetes-version $k8s_version
